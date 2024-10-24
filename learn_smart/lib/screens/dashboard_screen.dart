@@ -180,7 +180,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               ? null
               : FloatingActionButton(
                   onPressed: _showCreateCourseDialog,
-                  child: const Icon(Icons.add),
+                  child: const Icon(Icons.add, color: Colors.white),
                   backgroundColor: Colors.blue,
                 ),
     );

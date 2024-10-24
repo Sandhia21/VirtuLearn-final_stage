@@ -234,7 +234,10 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
       onPressed: () {
         _showCreateModuleDialog();
       },
-      child: const Icon(Icons.add),
+      child: const Icon(
+        Icons.add,
+        color: Colors.white,
+      ),
       backgroundColor: Colors.blue,
     );
   }
@@ -420,10 +423,39 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
               onPressed: () async {
                 if (_formKey.currentState!.validate()) {
                   _formKey.currentState!.save();
-                  await _apiService.updateModule(
-                      module.id, widget.courseId, _title!, _description!);
-                  Navigator.of(context).pop();
-                  setState(() {});
+
+                  // Show a loading snackbar while the update is happening
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Updating module...')),
+                  );
+
+                  try {
+                    // Assuming updateModule returns true on success
+                    bool success = await _apiService.updateModule(
+                        module.id, widget.courseId, _title!, _description!);
+
+                    // If the update is successful
+                    if (success) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content: Text('Module updated successfully!')),
+                      );
+                    } else {
+                      // If the update failed
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content: Text('Failed to update module')),
+                      );
+                    }
+                  } catch (e) {
+                    // Handle any errors that may occur during the API call
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error: $e')),
+                    );
+                  } finally {
+                    Navigator.of(context).pop();
+                    setState(() {});
+                  }
                 }
               },
               child: const Text('Update'),

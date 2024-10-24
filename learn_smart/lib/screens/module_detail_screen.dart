@@ -69,15 +69,6 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen>
     }
   }
 
-  void _handleError(dynamic error) {
-    setState(() {
-      _hasError = true;
-      _errorMessage = error is Exception
-          ? error.toString()
-          : 'An unexpected error occurred.';
-    });
-  }
-
   void _toggleNoteSelection(int noteId) {
     setState(() {
       if (_selectedNoteIds.contains(noteId)) {
@@ -95,7 +86,7 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen>
       );
       return;
     }
-    final apiService = Provider.of<ApiService>(context, listen: false);
+    Provider.of<ApiService>(context, listen: false);
 
     try {
       await _apiService.generateQuizForMultipleNotes(
@@ -357,6 +348,11 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen>
               },
             ),
           ),
+          ElevatedButton(
+              onPressed: () {
+                // createQuiz();
+              },
+              child: Text('Create Quiz'))
         ],
       ),
     );

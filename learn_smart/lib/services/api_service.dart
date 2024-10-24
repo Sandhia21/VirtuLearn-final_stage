@@ -277,11 +277,11 @@ class ApiService {
     }
   }
 
-  Future<void> updateModule(
+  Future<bool> updateModule(
       int moduleId, int courseId, String title, String description) async {
     final response = await _performHttpRequest(
       url: baseUrl + 'modules/$moduleId/',
-      requestType: 'PUT',
+      requestType: 'PATCH',
       body: {
         'title': title,
         'description': description,
@@ -291,8 +291,10 @@ class ApiService {
     if (response.statusCode == 200) {
       await fetchModules(courseId); // Refresh modules after update
       debugPrint('Module updated successfully');
+      return true; // Return true to indicate success
     } else {
-      throw Exception('Failed to update module');
+      debugPrint('Failed to update module');
+      return false; // Return false on failure
     }
   }
 
@@ -336,9 +338,8 @@ class ApiService {
     int moduleId,
     String title,
     String description,
-    String quizType,
-    String category,
-    List<Map<String, dynamic>> questions,
+    String content,
+    String quiz_duration,
   ) async {
     final response = await _performHttpRequest(
       url: baseUrl + 'modules/$moduleId/quizzes/',
@@ -346,9 +347,9 @@ class ApiService {
       body: {
         'title': title,
         'description': description,
-        'quiz_type': quizType,
-        'category': category,
-        'questions': questions,
+        'content': content,
+        'quiz_duration': quiz_duration,
+        'module_id': moduleId
       },
     );
 
@@ -423,6 +424,7 @@ class ApiService {
 
       if (response.statusCode == 204) {
         debugPrint('Note deleted successfully');
+        await fetchNotes(moduleId);
       } else {
         throw Exception('Failed to delete the note');
       }
