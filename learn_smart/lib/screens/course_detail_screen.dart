@@ -474,66 +474,66 @@ class ModuleCard extends StatelessWidget {
   final VoidCallback? onTap;
   final bool? isStudent;
 
-  ModuleCard(
-      {required this.module,
-      this.onEdit,
-      this.onDelete,
-      this.onTap,
-      this.isStudent});
+  ModuleCard({
+    required this.module,
+    this.onEdit,
+    this.onDelete,
+    this.onTap,
+    this.isStudent,
+  });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.blue,
-          borderRadius: BorderRadius.circular(20),
+      child: Card(
+        color: Colors.white,
+        elevation: 4.0,
+        margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Row(
-            children: [
-              Image.asset(
+          padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 16.0),
+          child: ListTile(
+            leading: CircleAvatar(
+              backgroundColor: const Color.fromARGB(255, 196, 196, 196),
+              child: Image.asset(
                 'assets/icons/module_img.png',
-                width: 50,
-                height: 50,
+                width: 100,
+                height: 100,
               ),
-              const SizedBox(width: 15),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      module.title,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      module.description,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
+            ),
+            title: Text(
+              module.title,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
               ),
-              if (onEdit != null && !isStudent!)
-                IconButton(
-                  icon: const Icon(Icons.edit, color: Colors.white),
-                  onPressed: onEdit,
-                ),
-              if (onDelete != null && !isStudent!)
-                IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.white),
-                  onPressed: onDelete,
-                ),
-            ],
+            ),
+            subtitle: Text(
+              module.description,
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.black54,
+              ),
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (onEdit != null && !isStudent!)
+                  IconButton(
+                    icon: const Icon(Icons.edit, color: Colors.blue),
+                    onPressed: onEdit,
+                  ),
+                if (onDelete != null && !isStudent!)
+                  IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    onPressed: onDelete,
+                  ),
+              ],
+            ),
           ),
         ),
       ),

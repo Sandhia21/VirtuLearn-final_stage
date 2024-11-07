@@ -87,7 +87,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                               : truncateWithEllipsis(titleMaxLength,
                                   title), // Truncate title if needed
                           style: const TextStyle(
-                            color: Colors.white,
+                            color: Color(0xFFFFFFFF),
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
                           ),
@@ -147,4 +147,44 @@ class SearchBar extends StatelessWidget {
       ),
     );
   }
+}
+
+class SelectionAppBar extends StatelessWidget implements PreferredSizeWidget {
+  final int selectedCount;
+  final VoidCallback onCancel;
+  final VoidCallback onGenerate;
+
+  const SelectionAppBar({
+    Key? key,
+    required this.selectedCount,
+    required this.onCancel,
+    required this.onGenerate,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return AppBar(
+      backgroundColor: Colors.blue,
+      leading: IconButton(
+        icon: Icon(Icons.close),
+        onPressed: onCancel,
+      ),
+      title: Text('$selectedCount Selected'),
+      actions: [
+        TextButton.icon(
+          icon: Icon(Icons.quiz, color: Colors.white),
+          label: Text('Generate Quiz', style: TextStyle(color: Colors.white)),
+          onPressed: selectedCount > 0 ? onGenerate : null,
+        ),
+      ],
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          bottom: Radius.circular(20),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Size get preferredSize => Size.fromHeight(kToolbarHeight);
 }

@@ -7,6 +7,9 @@ import 'package:learn_smart/view_models/auth_view_model.dart';
 import 'package:provider/provider.dart';
 import 'notes_detail_screen.dart';
 import 'quiz_detail_screen.dart';
+import 'widgets/custom_card.dart';
+import 'widgets/custom_button.dart';
+import 'widgets/custom_form_field.dart';
 
 class ModuleDetailScreen extends StatefulWidget {
   final int moduleId;
@@ -35,7 +38,7 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
       _apiService = ApiService(baseUrl: 'http://10.0.2.2:8000/api/');
@@ -109,6 +112,12 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen>
     final notes = DataStore.getNotes(widget.moduleId);
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
     bool isTeacher = authViewModel.user.role == 'teacher';
+    String truncateWithEllipsis(int cutoff, String myString) {
+      return (myString.length <= cutoff)
+          ? myString
+          : '${myString.substring(0, cutoff)}...';
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 5.0),
       child: Column(
@@ -118,63 +127,53 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen>
               itemCount: notes.length,
               itemBuilder: (context, index) {
                 final modelsNote.Note note = notes[index];
-                return Card(
-                  color: Colors
-                      .white, // Set the background color of the card to white
-                  elevation: 4.0, // Add elevation to give a shadow effect
-                  margin: EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: SizedBox(
-                    child: ListTile(
-                      contentPadding: EdgeInsets.symmetric(
-                          vertical: 10.0,
-                          horizontal: 16.0), // Center the content
-                      leading: CircleAvatar(
-                        backgroundColor: Colors.blue,
-                        child: const Icon(Icons.note,
-                            color: Color.fromARGB(255, 217, 224, 229)),
-                      ),
-                      title: Text(
-                        note.title ?? 'Untitled Note',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      tileColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      trailing: isTeacher
-                          ? _isSelectionMode
-                              ? Checkbox(
-                                  value: _selectedNoteIds.contains(note.id),
-                                  onChanged: (bool? value) {
-                                    _toggleNoteSelection(note.id);
-                                  },
-                                )
-                              : _buildNotePopupMenu(note)
-                          : null,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => NotesDetailScreen(
-                              noteId: note.id,
-                              moduleId: widget.moduleId,
-                            ),
-                          ),
-                        );
-                      },
-                      onLongPress: isTeacher
-                          ? () {
-                              _toggleNoteSelection(note.id);
-                            }
-                          : null,
-                      selected: _selectedNoteIds.contains(note.id),
+                return CustomCard(
+                  child: ListTile(
+                    contentPadding: EdgeInsets.symmetric(
+                        vertical: 10.0, horizontal: 16.0), // Center the content
+                    leading: CircleAvatar(
+                      backgroundColor: Colors.blue,
+                      child: const Icon(Icons.note,
+                          color: Color.fromARGB(255, 217, 224, 229)),
                     ),
+                    title: Text(
+                      truncateWithEllipsis(50, note.title),
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    tileColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    trailing: isTeacher
+                        ? _isSelectionMode
+                            ? Checkbox(
+                                value: _selectedNoteIds.contains(note.id),
+                                onChanged: (bool? value) {
+                                  _toggleNoteSelection(note.id);
+                                },
+                              )
+                            : _buildNotePopupMenu(note)
+                        : null,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => NotesDetailScreen(
+                            noteId: note.id,
+                            moduleId: widget.moduleId,
+                          ),
+                        ),
+                      );
+                    },
+                    onLongPress: isTeacher
+                        ? () {
+                            _toggleNoteSelection(note.id);
+                          }
+                        : null,
+                    selected: _selectedNoteIds.contains(note.id),
                   ),
                 );
               },
@@ -249,13 +248,14 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen>
         title: Text('Confirm Delete'),
         content: Text('Are you sure you want to delete this note?'),
         actions: [
-          TextButton(
+          CustomButton(
+            text: 'Cancel',
+            backgroundColor: Colors.grey,
             onPressed: () => Navigator.of(context).pop(false),
-            child: Text('Cancel'),
           ),
-          TextButton(
+          CustomButton(
+            text: 'Delete',
             onPressed: () => Navigator.of(context).pop(true),
-            child: Text('Delete'),
           ),
         ],
       ),
@@ -294,80 +294,632 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen>
           Expanded(
             child: ListView.builder(
               shrinkWrap: true,
-              // padding: const EdgeInsets.all(8.0),
               itemCount: quizzes.length,
               itemBuilder: (context, index) {
                 final modelsQuiz.Quiz quiz = quizzes[index];
-                return Card(
-                  color: Colors
-                      .white, // Set the background color of the card to white
-                  elevation: 4.0, // Add elevation to give a shadow effect
-                  margin: EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: SizedBox(
-                    child: ListTile(
-                      contentPadding: EdgeInsets.symmetric(
-                          vertical: 10.0, horizontal: 16.0),
-                      leading: CircleAvatar(
-                        backgroundColor: Colors.blue,
-                        child: const Icon(Icons.question_answer,
-                            color: Colors.white),
-                      ),
-                      title: Text(quiz.title ?? 'Untitled Quiz'),
-                      trailing: isTeacher ? _buildQuizPopupMenu(quiz) : null,
-                      onTap: () {
-                        if (authViewModel.user.role == 'student') {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => QuizDetailScreen(
-                                quizId: quiz.id,
-                                moduleId: widget.moduleId,
-                                isStudentEnrolled: true,
-                              ),
-                            ),
-                          );
-                        } else if (authViewModel.user.role == 'teacher') {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => QuizDetailScreen(
-                                quizId: quiz.id,
-                                moduleId: widget.moduleId,
-                                isStudentEnrolled: false, // For teachers
-                              ),
-                            ),
-                          );
-                        }
-                      },
+                return CustomCard(
+                  child: ListTile(
+                    contentPadding:
+                        EdgeInsets.symmetric(vertical: 10.0, horizontal: 16.0),
+                    leading: CircleAvatar(
+                      backgroundColor: Colors.blue,
+                      child: const Icon(Icons.question_answer,
+                          color: Colors.white),
                     ),
+                    title: Text(quiz.title),
+                    trailing: isTeacher ? _buildQuizPopupMenu(quiz) : null,
+                    onTap: () {
+                      if (authViewModel.user.role == 'student') {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => QuizDetailScreen(
+                              quizId: quiz.id,
+                              moduleId: widget.moduleId,
+                              isStudentEnrolled: true,
+                            ),
+                          ),
+                        );
+                      } else if (authViewModel.user.role == 'teacher') {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => QuizDetailScreen(
+                              quizId: quiz.id,
+                              moduleId: widget.moduleId,
+                              isStudentEnrolled: false, // For teachers
+                            ),
+                          ),
+                        );
+                      }
+                    },
                   ),
                 );
               },
             ),
           ),
-          ElevatedButton(
+          if (isTeacher)
+            ElevatedButton(
               onPressed: () {
-                // createQuiz();
+                // Call the method to open the quiz creation dialog
+                _showCreateQuizDialog(widget.moduleId);
               },
-              child: Text('Create Quiz'))
+              child: const Text('Create Quiz'),
+              style: ElevatedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  backgroundColor: Colors.blue,
+                  shape: RoundedRectangleBorder()),
+            ),
         ],
       ),
     );
   }
 
+  // Add these as instance variables to your existing class
+  late final _inputDecoration = InputDecoration(
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(8),
+    ),
+    filled: true,
+    fillColor: Colors.grey[50],
+    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+  );
+
+  late final _buttonStyle = ElevatedButton.styleFrom(
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+    foregroundColor: Colors.white,
+    backgroundColor: Colors.blue,
+    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+  );
+
+// Custom form field widget method
+  Widget _buildFormField({
+    required String label,
+    required void Function(String?) onSaved,
+    String? Function(String?)? validator,
+    TextInputType? keyboardType,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: TextFormField(
+        decoration: _inputDecoration.copyWith(labelText: label),
+        validator: validator ??
+            (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter $label';
+              }
+              return null;
+            },
+        onSaved: onSaved,
+        keyboardType: keyboardType,
+      ),
+    );
+  }
+
+  void _showCreateQuizDialog(int moduleId) {
+    final formKey = GlobalKey<FormState>();
+    String? title, description, currentQuestion, correctAnswer;
+    int? quizDuration;
+    String content = '';
+    final options = <String, String?>{};
+    int currentPhase = 1;
+    int questionCount = 0;
+
+    void addQuestionToContent() {
+      if (formKey.currentState!.validate()) {
+        formKey.currentState!.save();
+        content += "${questionCount + 1}) $currentQuestion\n";
+        options.forEach((key, value) {
+          content += "$key) $value\n";
+        });
+        content += "Correct Answer: $correctAnswer\n\n";
+
+        // Reset current question data
+        currentQuestion = null;
+        options.clear();
+        correctAnswer = null;
+        formKey.currentState!.reset();
+        questionCount++;
+      }
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            Widget buildQuizDetailsPhase() {
+              return Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Create Quiz',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue[700],
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 20),
+                    _buildInputField(
+                      label: 'Quiz Title',
+                      onSaved: (value) => title = value,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildInputField(
+                      label: 'Description',
+                      onSaved: (value) => description = value,
+                      maxLines: 3,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildInputField(
+                      label: 'Duration (minutes)',
+                      onSaved: (value) =>
+                          quizDuration = int.tryParse(value ?? ''),
+                      keyboardType: TextInputType.number,
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: () {
+                        if (formKey.currentState!.validate()) {
+                          formKey.currentState!.save();
+                          setState(() => currentPhase = 2);
+                        }
+                      },
+                      style: _buildButtonStyle(Colors.blue),
+                      child: const Text('Next'),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            Widget buildQuestionPhase() {
+              return Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Add Question ${questionCount + 1}',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue[700],
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 20),
+                    _buildInputField(
+                      label: 'Question',
+                      onSaved: (value) => currentQuestion = value,
+                      maxLines: 2,
+                    ),
+                    const SizedBox(height: 16),
+                    ...['A', 'B', 'C', 'D'].map((option) => Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: _buildInputField(
+                            label: 'Option $option',
+                            onSaved: (value) => options[option] = value,
+                          ),
+                        )),
+                    _buildInputField(
+                      label: 'Correct Answer (A/B/C/D)',
+                      onSaved: (value) => correctAnswer = value?.toUpperCase(),
+                      validator: (value) {
+                        if (value == null ||
+                            !['A', 'B', 'C', 'D']
+                                .contains(value.toUpperCase())) {
+                          return 'Please enter a valid answer (A, B, C, or D)';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                    // First row of buttons
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            style: _buildButtonStyle(Colors.grey),
+                            child: const Text(
+                              'Cancel',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              addQuestionToContent();
+                              setState(() {});
+                            },
+                            style: _buildButtonStyle(Colors.blue),
+                            child: const Text('Add Question'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    // Create button in second row
+                    if (questionCount > 0)
+                      ElevatedButton(
+                        onPressed: () async {
+                          if (formKey.currentState!.validate()) {
+                            addQuestionToContent();
+                            await _apiService.createQuiz(
+                              moduleId,
+                              title!,
+                              description!,
+                              content,
+                              quizDuration.toString(),
+                            );
+                            Navigator.of(context).pop();
+                          }
+                        },
+                        style: _buildButtonStyle(Colors.green),
+                        child: const Text('Create Quiz'),
+                      ),
+                  ],
+                ),
+              );
+            }
+
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: currentPhase == 1
+                    ? buildQuizDetailsPhase()
+                    : buildQuestionPhase(),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildInputField({
+    required String label,
+    required void Function(String?) onSaved,
+    String? Function(String?)? validator,
+    TextInputType? keyboardType,
+    int maxLines = 1,
+  }) {
+    return TextFormField(
+      decoration: InputDecoration(
+        labelText: label,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        filled: true,
+        fillColor: Colors.grey[50],
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
+        ),
+      ),
+      maxLines: maxLines,
+      keyboardType: keyboardType,
+      validator: validator ??
+          (value) {
+            if (value == null || value.isEmpty) {
+              return 'Please enter $label';
+            }
+            return null;
+          },
+      onSaved: onSaved,
+    );
+  }
+
+  ButtonStyle _buildButtonStyle(Color color) {
+    return ElevatedButton.styleFrom(
+      backgroundColor: color,
+      foregroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+      ),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 24,
+        vertical: 12,
+      ),
+    );
+  }
+
   void _showEditQuizDialog(modelsQuiz.Quiz quiz) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => QuizDetailScreen(
-            quizId: quiz.id,
-            moduleId: widget.moduleId,
-            isStudentEnrolled: false,
-            isEditMode: false // Pass edit mode
-            ),
+    final formKey = GlobalKey<FormState>();
+    TextEditingController titleController =
+        TextEditingController(text: quiz.title);
+    TextEditingController descriptionController =
+        TextEditingController(text: quiz.description);
+    TextEditingController durationController =
+        TextEditingController(text: quiz.quizDuration.toString());
+    String? currentQuestion, correctAnswer;
+    String content = quiz.content ?? '';
+    final options = <String, String?>{};
+    int currentPhase = 1;
+    int questionCount = 0;
+
+    // Parse existing questions from content
+    List<Map<String, dynamic>> existingQuestions = [];
+    if (content.isNotEmpty) {
+      final questionBlocks = content.split('\n\n');
+      for (var block in questionBlocks) {
+        if (block.trim().isEmpty) continue;
+
+        final lines = block.split('\n');
+        if (lines.isEmpty) continue;
+
+        final questionMap = <String, dynamic>{};
+        // Parse question
+        final questionMatch = RegExp(r'^\d+\) (.+)$').firstMatch(lines[0]);
+        if (questionMatch != null) {
+          questionMap['question'] = questionMatch.group(1);
+          questionMap['options'] = <String, String>{};
+
+          // Parse options
+          for (int i = 1; i < lines.length - 1; i++) {
+            final optionMatch =
+                RegExp(r'^([A-D])\) (.+)$').firstMatch(lines[i]);
+            if (optionMatch != null) {
+              questionMap['options']![optionMatch.group(1)!] =
+                  optionMatch.group(2)!;
+            }
+          }
+
+          // Parse correct answer
+          final answerMatch =
+              RegExp(r'^Correct Answer: ([A-D])$').firstMatch(lines.last);
+          if (answerMatch != null) {
+            questionMap['correctAnswer'] = answerMatch.group(1);
+          }
+
+          existingQuestions.add(questionMap);
+        }
+      }
+      questionCount = existingQuestions.length;
+    }
+
+    void addQuestionToContent() {
+      if (formKey.currentState!.validate()) {
+        formKey.currentState!.save();
+        content += "${questionCount + 1}) $currentQuestion\n";
+        options.forEach((key, value) {
+          content += "$key) $value\n";
+        });
+        content += "Correct Answer: $correctAnswer\n\n";
+
+        // Reset current question data
+        currentQuestion = null;
+        options.clear();
+        correctAnswer = null;
+        formKey.currentState!.reset();
+        questionCount++;
+      }
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            Widget buildQuizDetailsPhase() {
+              return Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Create Quiz',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue[700],
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 20),
+                    CustomFormField(
+                      label: 'Quiz Title',
+                      controller: titleController,
+                    ),
+                    const SizedBox(height: 16),
+                    CustomFormField(
+                      label: 'Description',
+                      controller: descriptionController,
+                      maxLines: 3,
+                    ),
+                    const SizedBox(height: 16),
+                    CustomFormField(
+                      label: 'Duration (minutes)',
+                      controller: durationController,
+                      keyboardType: TextInputType.number,
+                    ),
+                    const SizedBox(height: 24),
+                    CustomButton(
+                      text: 'Next',
+                      onPressed: () {
+                        if (formKey.currentState!.validate()) {
+                          formKey.currentState!.save();
+                          setState(() => currentPhase = 2);
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            Widget buildQuestionPhase() {
+              return Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Edit Question ${questionCount + 1}',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue[700],
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 20),
+                    _buildInputField(
+                      label: 'Question',
+                      onSaved: (value) => currentQuestion = value,
+                      maxLines: 2,
+                    ),
+                    const SizedBox(height: 16),
+                    ...['A', 'B', 'C', 'D'].map((option) => Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: _buildInputField(
+                            label: 'Option $option',
+                            onSaved: (value) => options[option] = value,
+                          ),
+                        )),
+                    _buildInputField(
+                      label: 'Correct Answer (A/B/C/D)',
+                      onSaved: (value) => correctAnswer = value?.toUpperCase(),
+                      validator: (value) {
+                        if (value == null ||
+                            !['A', 'B', 'C', 'D']
+                                .contains(value.toUpperCase())) {
+                          return 'Please enter a valid answer (A, B, C, or D)';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                    // First row of buttons
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            style: _buildButtonStyleEdit(Colors.grey),
+                            child: const Text(
+                              'Cancel',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              addQuestionToContent();
+                              setState(() {});
+                            },
+                            style: _buildButtonStyleEdit(Colors.blue),
+                            child: const Text('Add Question'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    // Save button in second row
+                    if (questionCount > 0 || existingQuestions.isNotEmpty)
+                      ElevatedButton(
+                        onPressed: () async {
+                          if (formKey.currentState!.validate()) {
+                            if (currentQuestion != null) {
+                              addQuestionToContent();
+                            }
+                            await _apiService.updateQuiz(
+                              moduleId: widget.moduleId,
+                              quizId: quiz.id,
+                              title: titleController.text,
+                              description: descriptionController.text,
+                              content: content,
+                            );
+                            Navigator.of(context).pop();
+                            await _apiService.fetchQuizzes(widget.moduleId);
+                          }
+                        },
+                        style: _buildButtonStyleEdit(Colors.green),
+                        child: const Text('Save Changes'),
+                      ),
+                  ],
+                ),
+              );
+            }
+
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: currentPhase == 1
+                    ? buildQuizDetailsPhase()
+                    : buildQuestionPhase(),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildInputFieldEdit({
+    required String label,
+    required TextEditingController controller,
+    String? Function(String?)? validator,
+    TextInputType? keyboardType,
+    int maxLines = 1,
+  }) {
+    return TextFormField(
+      controller: controller,
+      decoration: InputDecoration(
+        labelText: label,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        filled: true,
+        fillColor: Colors.grey[50],
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
+        ),
+      ),
+      maxLines: maxLines,
+      keyboardType: keyboardType,
+      validator: validator ??
+          (value) {
+            if (value == null || value.isEmpty) {
+              return 'Please enter $label';
+            }
+            return null;
+          },
+    );
+  }
+
+  ButtonStyle _buildButtonStyleEdit(Color color) {
+    return ElevatedButton.styleFrom(
+      backgroundColor: color,
+      foregroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+      ),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 24,
+        vertical: 12,
       ),
     );
   }
@@ -379,13 +931,14 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen>
         title: Text('Confirm Delete'),
         content: Text('Are you sure you want to delete this quiz?'),
         actions: [
-          TextButton(
+          CustomButton(
+            text: 'Cancel',
+            backgroundColor: Colors.grey,
             onPressed: () => Navigator.of(context).pop(false),
-            child: Text('Cancel'),
           ),
-          TextButton(
+          CustomButton(
+            text: 'Delete',
             onPressed: () => Navigator.of(context).pop(true),
-            child: Text('Delete'),
           ),
         ],
       ),
@@ -429,25 +982,19 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen>
           title: const Text('Generate Notes Using AI'),
           content: Form(
             key: _formKey,
-            child: TextFormField(
-              decoration: const InputDecoration(labelText: 'Enter Topic'),
-              onSaved: (value) {
-                _topic = value;
-              },
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter a topic';
-                }
-                return null;
-              },
+            child: CustomFormField(
+              label: 'Enter Topic',
+              onSaved: (value) => _topic = value,
             ),
           ),
           actions: [
-            TextButton(
+            CustomButton(
+              text: 'Cancel',
+              backgroundColor: Colors.grey,
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
             ),
-            ElevatedButton(
+            CustomButton(
+              text: 'Create',
               onPressed: () async {
                 if (_formKey.currentState!.validate()) {
                   _formKey.currentState!.save();
@@ -468,7 +1015,6 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen>
                   }
                 }
               },
-              child: const Text('Create'),
             ),
           ],
         );
@@ -561,7 +1107,7 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen>
                   child: FloatingActionButton(
                     onPressed: () => _showCreateNoteDialog(context),
                     backgroundColor: Colors.blue,
-                    child: Icon(Icons.add),
+                    child: Icon(Icons.add, color: Colors.white),
                     heroTag: "createNote",
                   ),
                 ),
@@ -610,6 +1156,7 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen>
               tabs: [
                 Tab(text: "Notes"),
                 Tab(text: "Quizzes"),
+                Tab(text: "Results"),
               ],
               onTap: (index) {
                 setState(() {
@@ -619,6 +1166,7 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen>
                       children: [
                         _buildNotesSection(),
                         _buildQuizzesSection(),
+                        _buildResultsSection(),
                       ],
                     ),
                   );
@@ -638,6 +1186,158 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen>
     );
   }
 
+  Widget _buildResultsSection() {
+    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+    bool isTeacher = authViewModel.user.role == 'teacher';
+
+    if (isTeacher) {
+      return _buildTeacherResultsView();
+    } else {
+      return _buildStudentResultsView();
+    }
+  }
+
+  Widget _buildTeacherResultsView() {
+    final quizzes = DataStore.getQuizzes(widget.moduleId);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: ListView.builder(
+        itemCount: quizzes.length,
+        itemBuilder: (context, index) {
+          final quiz = quizzes[index];
+          return CustomCard(
+            child: ListTile(
+              contentPadding:
+                  EdgeInsets.symmetric(vertical: 10.0, horizontal: 16.0),
+              leading: CircleAvatar(
+                backgroundColor: Colors.blue,
+                child: const Icon(Icons.leaderboard, color: Colors.white),
+              ),
+              title: Text(quiz.title),
+              subtitle: Text('View student results'),
+              onTap: () => _showQuizLeaderboard(quiz.id),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildStudentResultsView() {
+    final quizzes = DataStore.getQuizzes(widget.moduleId);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: ListView.builder(
+        itemCount: quizzes.length,
+        itemBuilder: (context, index) {
+          final quiz = quizzes[index];
+          return FutureBuilder<Map<String, dynamic>>(
+            future: _apiService.getQuizResult(quiz.id),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Center(child: CircularProgressIndicator());
+              }
+
+              if (snapshot.hasError) {
+                return CustomCard(
+                  child: ListTile(
+                    title: Text('Error loading results'),
+                    subtitle: Text(snapshot.error.toString()),
+                  ),
+                );
+              }
+
+              final result = snapshot.data;
+              if (result == null) {
+                return CustomCard(
+                  child: ListTile(
+                    title: Text(quiz.title),
+                    subtitle: Text('No attempt yet'),
+                  ),
+                );
+              }
+
+              return CustomCard(
+                child: ExpansionTile(
+                  leading: CircleAvatar(
+                    backgroundColor: Colors.blue,
+                    child: Text('${result['percentage']}%'),
+                  ),
+                  title: Text(quiz.title),
+                  subtitle:
+                      Text('Score: ${result['score']}/${result['total']}'),
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'AI Recommendations:',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Text(result['ai_recommendations'] ??
+                              'No recommendations available'),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _showQuizLeaderboard(int quizId) async {
+    try {
+      final leaderboard = await _apiService.getQuizLeaderboard(quizId);
+
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text('Quiz Leaderboard'),
+          content: Container(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: leaderboard.length,
+              itemBuilder: (context, index) {
+                final entry = leaderboard[index];
+                return ListTile(
+                  leading: CircleAvatar(
+                    child: Text('${index + 1}'),
+                  ),
+                  title: Text(entry['student_name']),
+                  trailing: Text('${entry['percentage']}%'),
+                  subtitle: Text('Score: ${entry['score']}/${entry['total']}'),
+                );
+              },
+            ),
+          ),
+          actions: [
+            CustomButton(
+              text: 'Close',
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error loading leaderboard: $e')),
+      );
+    }
+  }
+
   Future<void> _showCreateNoteDialog(BuildContext context) async {
     final _formKey = GlobalKey<FormState>();
     String? _title;
@@ -653,55 +1353,27 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                TextFormField(
-                  decoration: InputDecoration(labelText: 'Title'),
-                  onSaved: (value) {
-                    _title = value;
-                  },
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter a title';
-                    }
-                    return null;
-                  },
+                CustomFormField(
+                  label: 'Title',
+                  onSaved: (value) => _title = value,
                 ),
-                TextFormField(
-                  decoration: InputDecoration(labelText: 'Content'),
-                  onSaved: (value) {
-                    _content = value;
-                  },
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter content';
-                    }
-                    return null;
-                  },
+                SizedBox(height: 16),
+                CustomFormField(
+                  label: 'Content',
+                  onSaved: (value) => _content = value,
+                  maxLines: 3,
                 ),
               ],
             ),
           ),
           actions: [
-            TextButton(
+            CustomButton(
+              text: 'Cancel',
+              backgroundColor: Colors.grey,
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-              style: ElevatedButton.styleFrom(
-                textStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                foregroundColor: Colors.black,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
             ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                textStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                backgroundColor: Colors.lightBlue,
-                foregroundColor: Colors.black,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              ),
+            CustomButton(
+              text: 'Create',
               onPressed: () async {
                 if (_formKey.currentState!.validate()) {
                   _formKey.currentState!.save();
@@ -711,7 +1383,6 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen>
                   await _apiService.fetchNotes(widget.moduleId);
                 }
               },
-              child: const Text('Create'),
             ),
           ],
         );

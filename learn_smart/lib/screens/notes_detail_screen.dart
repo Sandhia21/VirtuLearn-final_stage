@@ -98,34 +98,51 @@ class _NotesDetailScreenState extends State<NotesDetailScreen> {
 
   Widget _buildEditNoteForm(Note note) {
     return SingleChildScrollView(
-      child: Column(
-        children: [
-          TextField(
-            controller: _titleController,
-            decoration: InputDecoration(labelText: 'Note Title'),
-          ),
-          SizedBox(height: 16),
-          TextField(
-            controller: _contentController,
-            maxLines: 10,
-            decoration: InputDecoration(
-              labelText: 'Note Content',
-              border: OutlineInputBorder(),
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          children: [
+            SizedBox(height: 10),
+            TextField(
+              controller: _titleController,
+              decoration: InputDecoration(
+                labelText: 'Note Title',
+                border: OutlineInputBorder(),
+              ),
             ),
-          ),
-          SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () async {
-              if (_titleController.text.isNotEmpty &&
-                  _contentController.text.isNotEmpty) {
-                await _showSaveConfirmation();
-              } else {
-                _showErrorSnackBar('Please fill all fields.');
-              }
-            },
-            child: Text('Save'),
-          ),
-        ],
+            SizedBox(height: 16),
+            TextField(
+              controller: _contentController,
+              maxLines: 22,
+              decoration: InputDecoration(
+                labelText: 'Note Content',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      if (_titleController.text.isNotEmpty &&
+                          _contentController.text.isNotEmpty) {
+                        await _showSaveConfirmation();
+                      } else {
+                        _showErrorSnackBar('Please fill all fields.');
+                      }
+                    },
+                    child: Text('Save'),
+                    style: ElevatedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        backgroundColor: Colors.blue,
+                        shape: RoundedRectangleBorder()),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -166,11 +183,11 @@ class _NotesDetailScreenState extends State<NotesDetailScreen> {
         title: Text('Save Note'),
         content: Text('Are you sure you want to save this note?'),
         actions: [
-          TextButton(
+          ElevatedButton(
             onPressed: () => Navigator.pop(context, false),
             child: Text('Cancel'),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () async {
               Navigator.pop(context, true);
               await _saveNote();

@@ -349,10 +349,14 @@ class ApiService {
         'description': description,
         'content': content,
         'quiz_duration': quiz_duration,
-        'module_id': moduleId
+        'module': moduleId
       },
     );
 
+    if (response.statusCode != 201) {
+      debugPrint('Failed to create quiz: ${response.body}');
+      throw Exception('Failed to create quiz: ${response.body}');
+    }
     if (response.statusCode == 201) {
       await fetchQuizzes(moduleId); // Refresh quizzes after creation
     } else {
@@ -477,17 +481,25 @@ class ApiService {
   }
 
   Future<void> generateQuizForMultipleNotes(
-      int moduleId, List<int> noteIds) async {
+    int moduleId,
+    List<int> noteIds,
+  ) async {
+    debugPrint('Generating quiz for notes: $noteIds in module: $moduleId');
+
     final response = await _performHttpRequest(
       url: baseUrl + 'modules/$moduleId/notes/generate-quiz/',
       requestType: 'POST',
-      body: ({
+      body: {
         'note_ids': noteIds,
-      }),
+      },
     );
 
-    if (response.statusCode != 201) {
-      throw Exception('Failed to generate quiz: ${response.body}');
+    if (response.statusCode == 201) {
+      debugPrint('Quiz generated successfully');
+      await fetchQuizzes(moduleId); // Refresh quizzes list
+    } else {
+      final errorData = json.decode(response.body);
+      throw Exception(errorData['error'] ?? 'Failed to generate quiz');
     }
   }
 
@@ -518,13 +530,14 @@ class ApiService {
     required int quizId,
     required String title,
     required String description,
+    required String content,
   }) async {
     final response = await _performHttpRequest(
       url: baseUrl + 'modules/$moduleId/quizzes/$quizId/',
       requestType: 'PUT',
       body: {
         'title': title,
-        'description': description,
+        'content': content,
       },
     );
 
@@ -549,6 +562,93 @@ class ApiService {
       return Quiz.fromJson(quizJson);
     } else {
       throw Exception('Failed to load quiz details');
+    }
+  }
+
+  Future<void> submitQuizResult({
+    required int moduleId,
+    required int quizId,
+    required double percentage,
+    required String quizContent,
+  }) async {
+    final url = baseUrl + 'results/$moduleId/quizzes/$quizId/';
+
+    try {
+      final response = await _performHttpRequest(
+        url: url,
+        requestType: 'POST',
+        body: {
+          "quiz": quizId,
+          'percentage': percentage,
+          'quiz_content': quizContent,
+        },
+      );
+
+      if (response.statusCode != 201) {
+        final errorData = json.decode(response.body);
+        if (errorData['code'] == 'duplicate_submission') {
+          throw Exception('You have already submitted this quiz.');
+        }
+        throw Exception('Failed to submit quiz result: ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('Error submitting quiz result: $e');
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> getQuizResult(int quizId) async {
+    try {
+      final response = await _performHttpRequest(
+        url: baseUrl + 'quizzes/$quizId/result/',
+        requestType: 'GET',
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to fetch quiz result');
+      }
+    } catch (e) {
+      debugPrint('Error fetching quiz result: $e');
+      throw Exception('Error fetching quiz result');
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getQuizLeaderboard(int quizId) async {
+    try {
+      final response = await _performHttpRequest(
+        url: baseUrl + 'quizzes/$quizId/leaderboard/',
+        requestType: 'GET',
+      );
+
+      if (response.statusCode == 200) {
+        List<dynamic> data = json.decode(response.body);
+        return List<Map<String, dynamic>>.from(data);
+      } else {
+        throw Exception('Failed to fetch quiz leaderboard');
+      }
+    } catch (e) {
+      debugPrint('Error fetching quiz leaderboard: $e');
+      throw Exception('Error fetching quiz leaderboard');
+    }
+  }
+
+  Future<Map<String, dynamic>> getStudentQuizResults(int moduleId) async {
+    try {
+      final response = await _performHttpRequest(
+        url: baseUrl + 'modules/$moduleId/results/',
+        requestType: 'GET',
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to fetch student quiz results');
+      }
+    } catch (e) {
+      debugPrint('Error fetching student quiz results: $e');
+      throw Exception('Error fetching student quiz results');
     }
   }
 }

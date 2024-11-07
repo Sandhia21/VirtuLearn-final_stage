@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:learn_smart/screens/widgets/result.dart';
 import 'package:learn_smart/screens/widgets/app_bar.dart';
 import 'package:learn_smart/services/api_service.dart';
 import 'package:learn_smart/models/quiz.dart';
@@ -128,12 +129,70 @@ class _QuizDetailScreenState extends State<QuizDetailScreen> {
     }
   }
 
-  void _submitQuiz() {
+  String _generateSubmissionContent() {
+    StringBuffer submissionContent = StringBuffer();
+
+    for (int i = 0; i < parsedQuestions.length; i++) {
+      // Add question
+      submissionContent.writeln(parsedQuestions[i]['question']);
+
+      // Add all options
+      List<String> options = parsedQuestions[i]['options'];
+      for (String option in options) {
+        submissionContent.writeln(option);
+      }
+
+      // Add correct answer
+      submissionContent
+          .writeln('Correct Answer: ${parsedQuestions[i]['correctAnswer']}');
+
+      // Add student's selected answer
+      String? studentAnswer = selectedAnswers[i];
+      submissionContent
+          .writeln('Student Answer: ${studentAnswer ?? 'Not answered'}');
+
+      // Add blank line between questions
+      submissionContent.writeln();
+    }
+
+    return submissionContent.toString().trim();
+  }
+
+  void _submitQuiz() async {
+    // Calculate the quiz result
     _calculateResult();
+
+    // Cancel the timer and show the result
     setState(() {
       showResult = true;
       _timer?.cancel();
     });
+
+    // Prepare quiz result data
+    int totalQuestions = parsedQuestions.length;
+    double percentage = (correctAnswersCount / totalQuestions) * 100;
+
+    // Generate submission content with student's answers
+    String submissionContent = _generateSubmissionContent();
+
+    // Submit the result to the backend
+    try {
+      await _apiService.submitQuizResult(
+        moduleId: widget.moduleId,
+        quizId: widget.quizId,
+        percentage: percentage,
+        quizContent:
+            submissionContent, // Now contains both questions and student's answers
+      );
+      print("Quiz result submitted successfully!");
+    } catch (e) {
+      print("Failed to submit quiz result: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Failed to submit quiz result. Please try again."),
+        ),
+      );
+    }
   }
 
   Widget _buildQuizContent() {
@@ -408,83 +467,95 @@ class _QuizDetailScreenState extends State<QuizDetailScreen> {
   }
 
   Widget _buildResultView() {
-    int totalQuestions = parsedQuestions.length;
-    double percentage = (correctAnswersCount / totalQuestions) * 100;
-
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          'Quiz Completed!',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF1A4A44),
-          ),
-        ),
-        SizedBox(height: 20),
-        Container(
-          padding: EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Color(0xFFE3F2FD),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Column(
-            children: [
-              Text(
-                '${percentage.round()}%',
-                style: TextStyle(
-                  fontSize: 48,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1A4A44),
-                ),
-              ),
-              Text(
-                '$correctAnswersCount out of $totalQuestions correct',
-                style: TextStyle(
-                  fontSize: 18,
-                  color: Colors.grey[600],
-                ),
-              ),
-            ],
-          ),
-        ),
-        SizedBox(height: 32),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  showReview = true;
-                });
-              },
-              child: Text('Review Answers'),
-              style: ElevatedButton.styleFrom(
-                foregroundColor: Color(0xFF1A4A44),
-                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-            SizedBox(width: 16),
-            OutlinedButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: Text('Return'),
-              style: OutlinedButton.styleFrom(
-                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
+    return ResultView(
+      totalQuestions: parsedQuestions.length,
+      correctAnswersCount: correctAnswersCount,
+      onReview: () {
+        setState(() {
+          showReview = true;
+        });
+      },
+      onReturn: () {
+        Navigator.pop(context);
+      },
     );
+    // int totalQuestions = parsedQuestions.length;
+    // double percentage = (correctAnswersCount / totalQuestions) * 100;
+
+    // return Column(
+    //   mainAxisAlignment: MainAxisAlignment.center,
+    //   children: [
+    //     Text(
+    //       'Quiz Completed!',
+    //       style: TextStyle(
+    //         fontSize: 24,
+    //         fontWeight: FontWeight.bold,
+    //         color: Color(0xFF1A4A44),
+    //       ),
+    //     ),
+    //     SizedBox(height: 20),
+    //     Container(
+    //       padding: EdgeInsets.all(24),
+    //       decoration: BoxDecoration(
+    //         color: Color(0xFFE3F2FD),
+    //         borderRadius: BorderRadius.circular(16),
+    //       ),
+    //       child: Column(
+    //         children: [
+    //           Text(
+    //             '${percentage.round()}%',
+    //             style: TextStyle(
+    //               fontSize: 48,
+    //               fontWeight: FontWeight.bold,
+    //               color: Color(0xFF1A4A44),
+    //             ),
+    //           ),
+    //           Text(
+    //             '$correctAnswersCount out of $totalQuestions correct',
+    //             style: TextStyle(
+    //               fontSize: 18,
+    //               color: Colors.grey[600],
+    //             ),
+    //           ),
+    //         ],
+    //       ),
+    //     ),
+    //     SizedBox(height: 32),
+    //     Row(
+    //       mainAxisAlignment: MainAxisAlignment.center,
+    //       children: [
+    //         ElevatedButton(
+    //           onPressed: () {
+    //             setState(() {
+    //               showReview = true;
+    //             });
+    //           },
+    //           child: Text('Review Answers'),
+    //           style: ElevatedButton.styleFrom(
+    //             foregroundColor: Color(0xFF1A4A44),
+    //             padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+    //             shape: RoundedRectangleBorder(
+    //               borderRadius: BorderRadius.circular(12),
+    //             ),
+    //           ),
+    //         ),
+    //         SizedBox(width: 16),
+    //         OutlinedButton(
+    //           onPressed: () {
+    //             Navigator.pop(context);
+    //           },
+    //           child: Text('Return'),
+    //           style: OutlinedButton.styleFrom(
+    //             padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+    //             shape: RoundedRectangleBorder(
+    //               borderRadius: BorderRadius.circular(12),
+    //             ),
+    //           ),
+    //         ),
+    //       ],
+    //     ),
+    //   ],
+    // );
   }
 
   @override
